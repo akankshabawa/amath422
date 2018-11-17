@@ -24,4 +24,8 @@ R=2
 %fvals: Growth function applied to the population density within the
 %habitat
 %Beverton-Holt Curve:
+%{
+function F=fvals(R,patch_n0,k)
 
+F=R*patch_n0/(1+(R-1)/k*patch_n0);
+%}
