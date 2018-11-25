@@ -1,43 +1,63 @@
 %% BASIC MODEL
-% DESCRIPTIVE TEXT
 
-% N: Number of iterations to run the simulation over
-% D: Total length of fixed landscape - D depends on parameters and is
-% defined below
-% L: Habitat length
-% n: Number of spatial sunintervals over habitat. Number must be odd
-% dx: Length of spatial subinterval
-% k: Carrying capacity
-% init_sigma: Mean dispersal distance for establishing initial distribution
-% xe: Speed at which habitat moves at each time step
-% R: Net reproductive rate
+%GENERAL PARAMETERS
+L = 5; %Length of habitat
+n = 201; %Number of spatial subintervals over habitat
+dx = L/(n-1); %Length of spatial subinterval
+k = 100; %Carrying capacity
+init_sigma = 2; %Mean dispersal distance for establishing initial distribution
+xe = 1; %Speed at which habitat moves for each timestep
+R = 2; %Net reproductive rate
+N = 50; %Number of iterations to run simulation
 
-L=5
-n=201
-N=50
-dx=L/(n-1)
-k=100
-init_sigma=2
-xe=1
-R=2
+%DISPERSAL FUNCTION PARAMETERS
+dispersal_type = "gaussian"; %Type of dispersal (ie gauss, cauchy, lapalce)
+var = 1; %Variance of dispersal kernel
 
-%fvals: Growth function applied to the population density within the
-%habitat
-%Beverton-Holt Curve:
-%{
-function F=fvals(R,patch_n0,k)
+%GET THE POPULATION IN EQUILIBRIUM
+D = xe*50 + 2*L; %Total length of landscape (ensures length is long enough that pop
+                 %won't crash after first iteration)
+x = -D/2:dx:D/2; %vector of positions over entire landscape D
+init_patch_center = -D/2 + 1.2*L; %center of initial habitat
+y = -L/2+init_patch_center:dx:L/2+init_patch_center;
+left_index = (D/2 - L/2 + init_patch_center)/dx + 1; %index of x where habitat starts
+right_index = left_index + L/dx; %index of x where habitat ends
 
-F=R*patch_n0/(1+(R-1)/k*patch_n0);
-%}
+n0 = init_dist(init_sigma, init_patch_center, x, y); %Initial distribution
 
-%Define the dispersal function and relevant parameters
-    %One-dimentional dispersal kernel
-    %x,y: destination and source locations in one dimentional space
-    %dispersal.type: functional form of dispersal kernel
-    %param: controls variance of dispersal kernel
+%RUN DETERMINISTIC MODEL
+burn = 25; %Number of iterations to get equilibrium before adding climate change
 
-%Parameters
-    %dispersal.type: reactice parameter defining functional form of
-    %dispersal kernel
-        %Can accomidate Gaussian, Laplace, or Cauchy
-    %param: Reactive parameter defining variance of dispersal kernel
+for i = 1:burn
+    patch_n0 = n0(left_index:right_index); %previous densities in habitat
+    %WTF IS OUTER UGHH
+end
+
+%DISPERSAL FUNCTION
+function disp = kernel(x, y, dispersal_type, param)
+    if(dispersal_type == "gaussian")
+        sigma = param;
+        disp = (1/(sqrt(2*pi)*sigma)*exp((-((x-y).^2))/(2*sigma.^2)));
+    elseif(dispersal_type == "laplace")
+        alpha = param;
+        disp = (alpha/2*exp(-alpha*abs(x-y)));
+    elseif(dispersal_type == "cauchy")
+        alpha = param;
+        disp = (alpha/pi/(alpha.^2+(x-y).^2));
+    end
+end
+
+%GROWTH FUNCTION (BEVERTON-HOLT HERE)
+function growth = bev_holt(patch_n0)
+    growth = (R*patch_n0 / (1 + (R-1)/k*patch_0));
+end
+
+%INITIAL DISTRIBUTION FUNCTION (USES GAUSSIAN KERNEL)
+function n0 = init_dist(init_sigma, init_patch_center, x, y)
+    n0 = 100/(sqrt(2*pi)*init_sigma)*exp(-(x-(init_patch_center+0)).^2/(2*init_sigma.^2));
+end
+
+
+
+
+
