@@ -27,7 +27,7 @@ right_index = left_index + L/dx; %index of x where habitat ends
 n0 = init_dist(init_sigma, init_patch_center, x, y); %Initial distribution
 
 %RUN DETERMINISTIC MODEL
-burn = 25; %Number of iterations to get equilibrium before adding climate change
+burn = 10; %Number of iterations to get equilibrium before adding climate change
 param = 1;
 for i = 1:burn
     patch_n0 = n0(left_index:right_index); %previous densities in habitat
@@ -35,7 +35,29 @@ for i = 1:burn
     newn = dx*K*bev_holt(patch_n0, R, k);
     n0 = newn;
     y = x(left_index: right_index);
-    plot(patch_n0); hold on
+    %plot(patch_n0); hold on;
+end
+
+for t = 2:N
+          patch_n0 = n0(left_index:right_index);
+          K = outerFunc(x,y,dispersal_type, param);         
+          newn = dx*K*bev_holt(patch_n0, R, k);
+          %plot new population density newn in grey
+          plot(newn)
+          %end simulation if population is -->0
+          if(trapz(x,newn)< 5)
+          break  
+          end
+          %If population is not approaching 0, continue simulation         
+          %assign the new population to be the current population
+          n0 = newn;
+          %shift habitat limits according to c_left and c_right
+          left_index = left_index + xe/dx;
+          right_index = min(right_index+xe/dx,length(x));  
+                    
+          %grab the new vector of habitat locations y
+          %if the habitat has shifted past the domain boundary on the right, only grab the relevant positions
+          y = x(left_index:right_index);
 end
 patch_n0;
 
@@ -71,7 +93,6 @@ end
 function n0 = init_dist(init_sigma, init_patch_center, x, y)
     n0 = 100/(sqrt(2*pi)*init_sigma)*exp(-(x-(init_patch_center+0)).^2/(2*init_sigma.^2));
 end
-
 
 
 
