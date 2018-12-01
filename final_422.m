@@ -69,7 +69,6 @@ for t = 2:N
           y = x(left_index:right_index);
 end
 
-title('Population Density vs. Habitat Position with Constant Climate Change');
 xlabel('Spatial Gradient');
 ylabel('Population Density');
 set(gca,'FontSize',16);
