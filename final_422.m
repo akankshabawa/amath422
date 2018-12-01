@@ -34,10 +34,10 @@ param = 1;
 for i = 1:burn
     patch_n0 = n0(left_index:right_index); %previous densities in habitat
     K = outerFunc(x,y,dispersal_type, param);
-    size(K)
-    size(patch_n0)
+    size(K);
+    size(patch_n0);
     blah = bev_holt(patch_n0, R, k);
-    size(blah)
+    size(blah);
     newn = dx.*K*blah.';
     newn = newn.';
     n0 = newn;
