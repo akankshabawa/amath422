@@ -1,5 +1,7 @@
 %% BASIC MODEL
 
+clear all;
+
 %GENERAL PARAMETERS
 L = 5; %Length of habitat
 n = 201; %Number of spatial subintervals over habitat
@@ -42,14 +44,15 @@ for i = 1:burn
     y = x(left_index:right_index);
     
 end
-plot(n0)
+
 for t = 2:N
           patch_n0 = n0(left_index:right_index);
           K = outerFunc(x,y,dispersal_type, param);         
           newn = dx*K*bev_holt(patch_n0, R, k).';
           newn = newn.';
           %plot new population density newn in grey
-          plot(newn); hold on;
+          plot(x, newn, 'b'); hold on;
+         
           %end simulation if population is -->0
           if(trapz(x,newn)< 5)
           break  
@@ -65,7 +68,11 @@ for t = 2:N
           %if the habitat has shifted past the domain boundary on the right, only grab the relevant positions
           y = x(left_index:right_index);
 end
-patch_n0;
+
+title('Population Density vs. Habitat Position with Constant Climate Change');
+xlabel('Spatial Gradient');
+ylabel('Population Density');
+set(gca,'FontSize',16);
 
 function outer = outerFunc(x,y, dispersal_type, param)
     outer = zeros(length(x), length(y));
