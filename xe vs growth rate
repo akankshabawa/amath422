@@ -58,11 +58,11 @@ maxNewn(1,1) = max(newn);
 lambdaVector = zeros(25,1);
 count = 0;
 
-for xe = 0:.2:.5 %this will control climate change speed xe
+for xe = 0:.02:.5 %this will control climate change speed xe
     count = count + 1;
-%     n0 = initialn0;
-%     patch_n0 = n0;
-%     left_index = init_left_index; 
+%      n0 = initialn0;
+%      patch_n0 = n0;
+%      left_index = init_left_index; 
 %     right_index=init_right_index; 
     for t = 2:N
           
