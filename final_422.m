@@ -1,14 +1,12 @@
 %% BASIC MODEL
-
-clear all;
-
+clc; close all;
 %GENERAL PARAMETERS
 L = 5; %Length of habitat
 n = 201; %Number of spatial subintervals over habitat
 dx = L/(n-1); %Length of spatial subinterval
 k = 100; %Carrying capacity
 init_sigma = 2; %Mean dispersal distance for establishing initial distribution
-xe = 1; %Speed at which habitat moves for each timestep
+xe = 1.1; %Speed at which habitat moves for each timestep
 R = 2; %Net reproductive rate
 N = 50; %Number of iterations to run simulation
 
@@ -24,9 +22,21 @@ init_patch_center = -D/2 + 1.2*L; %center of initial habitat
 y = -L/2+init_patch_center:dx:L/2+init_patch_center;
 left_index = (D/2 - L/2 + init_patch_center)/dx + 1; %index of x where habitat starts
 right_index = left_index + L/dx; %index of x where habitat ends
-%size(y) = 1x201
-%size(x) = 1x2401
 n0 = init_dist(init_sigma, init_patch_center, x, k); %Initial distribution
+
+%CALCULATE "GROWTH SCALING FACTORS"
+%this is a vector that will scale R (the net reproductive rate) based on
+%how far from the center of the habitat a subinterval is. 
+scaling_sigma = length(y)/6; %std dev of new R distribution
+init_R_vec = zeros(1, length(y)) + R; %create vector for initial R vectors (all values are the same)
+loc = 1:1:length(y);
+cent = length(y)/2;
+R_scales = (1/(sqrt(2*pi)*scaling_sigma)*exp((-((loc-cent).^2))/(2*scaling_sigma.^2)));
+%scales the init R vector so it looks normal and has same area under curve
+new_R_vec = R_scales.*init_R_vec.*length(y);
+%cap R values so they dont get unrealistic
+new_R_vec(new_R_vec>2*R) = 2*R;
+
 
 %RUN DETERMINISTIC MODEL
 burn = 10; %Number of iterations to get equilibrium before adding climate change
@@ -34,25 +44,20 @@ param = 1;
 for i = 1:burn
     patch_n0 = n0(left_index:right_index); %previous densities in habitat
     K = outerFunc(x,y,dispersal_type, param);
-    size(K);
-    size(patch_n0);
-    blah = bev_holt(patch_n0, R, k);
-    size(blah);
-    newn = dx.*K*blah.';
+    cent = left_index + (length(y)/2);
+    newn = dx.*K*bev_holt(patch_n0, new_R_vec, k).';
     newn = newn.';
     n0 = newn;
-    y = x(left_index:right_index);
-    
+    y = x(left_index:right_index); 
 end
 
 for t = 2:N
           patch_n0 = n0(left_index:right_index);
           K = outerFunc(x,y,dispersal_type, param);         
-          newn = dx*K*bev_holt(patch_n0, R, k).';
+          newn = dx*K*bev_holt(patch_n0, new_R_vec, k).';
           newn = newn.';
           %plot new population density newn in grey
-          plot(x, newn, 'b'); hold on;
-         
+          plot(newn); hold on;
           %end simulation if population is -->0
           if(trapz(x,newn)< 5)
           break  
@@ -68,10 +73,6 @@ for t = 2:N
           %if the habitat has shifted past the domain boundary on the right, only grab the relevant positions
           y = x(left_index:right_index);
 end
-
-xlabel('Spatial Gradient');
-ylabel('Population Density');
-set(gca,'FontSize',16);
 
 function outer = outerFunc(x,y, dispersal_type, param)
     outer = zeros(length(x), length(y));
@@ -98,8 +99,9 @@ end
 
 %GROWTH FUNCTION (BEVERTON-HOLT HERE)
 function growth = bev_holt(patch_n0, R, k)
-    growth = (R.*patch_n0 ./ (1 + (R-1)/k.*patch_n0));
+    growth = (R.*patch_n0 ./ (1 + (R-1)./k.*patch_n0));
 end
+
 
 %INITIAL DISTRIBUTION FUNCTION (USES GAUSSIAN KERNEL)
 function n0 = init_dist(init_sigma, init_patch_center, x, k)
