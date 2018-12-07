@@ -1,8 +1,8 @@
 % BASIC MODEL
-
+warning off;
 %clear all; close all;
 %GENERAL PARAMETERS
-L = 5; %Length of habitat
+L = 3; %Length of habitat #next do length 9
 n = 201; %Number of spatial subintervals over habitat
 dx = L/(n-1); %Length of spatial subinterval
 k = 100; %Carrying capacity
@@ -38,11 +38,10 @@ n0 = init_dist(init_sigma, init_patch_center, x, k); %Initial distribution
 %RUN DETERMINISTIC MODEL
 burn = 30; %Number of iterations to get equilibrium before adding climate change
 param = 1;
+
 for i = 1:burn
     patch_n0 = n0(left_index:right_index); %previous densities in habitat
     K = outerFunc(x,y,dispersal_type, param);
-    size(K);
-    size(patch_n0);
     blah = bev_holt(patch_n0, R, k);
     newn = dx.*K*blah.';
     newn = newn.';
@@ -51,73 +50,52 @@ for i = 1:burn
     
 end
 initialn0 = n0;
-%plot(n0); hold on;
 maxNewn = zeros(N,1);
 maxNewn(1,1) = max(newn);
-
-lambdaVector = zeros(25,1);
 count = 0;
+init_y = y;
+init_newn = newn;
 
-for xe = 0:.02:.5 %this will control climate change speed xe
+steadyState = zeros(101,1);
+for xe = 0:.02:2 %0:.02:.5 %this will control climate change speed xe
+    newn = init_newn; 
     count = count + 1;
-%      n0 = initialn0;
-%      patch_n0 = n0;
-%      left_index = init_left_index; 
-%     right_index=init_right_index; 
+    left_index = init_left_index; 
+     right_index=init_right_index; 
+     n0 = initialn0;
+     patch_n0 = n0;
+     y = init_y;
     for t = 2:N
-          
-%           patch_n0 = n0((left_index):(right_index));
-%           K = outerFunc(x,y,dispersal_type, param);         
-%           newn = dx*K*bev_holt(patch_n0, R, k).';
-%           newn = newn.';
-%     
           %plot(x, newn); hold on; %Not plotting newn in this case.
           
           maxNewn(t,1) = max(newn);
           %end simulation if population is -->0
-          if(trapz(x,newn)< 5)
-          break  
-          end
+%           if(trapz(x,newn)< 5)
+%           break  
+%           end
           %If population is not approaching 0, continue simulation         
           %assign the new population to be the current population
           n0 = newn;
           %shift habitat limits according to c_left and c_right
           left_index = left_index + xe/dx;
           right_index = min(right_index+xe/dx,length(x));  
-          y = x((left_index):(right_index));
+          y = x(left_index:right_index);
           
-          patch_n0 = n0((left_index):(right_index));
+          patch_n0 = n0(left_index:right_index);
           K = outerFunc(x,y,dispersal_type, param);         
           newn = dx*K*bev_holt(patch_n0, R, k).';
           newn = newn.';
     
 
     end
-    %figure
-    xVector = 0:N-1;
-    %adjusted = maxNewn - min(maxNewn);
-    exponentialFit = fit(xVector.', maxNewn, 'a*exp(b*x) + c', 'StartPoint', [80, -.2, 70]);
-    
-    %plot(xVector, maxNewn); hold on;
-    %plot(exponentialFit); hold on;
-    coefficients = coeffvalues(exponentialFit)
-    lambda = exp(coefficients(1,2)); %If less than 1, shrinking. 
-    lambdaVector(count,1) = lambda;
-    
-    %plot xe vs lambda
+    steadyState(count, 1) = min(maxNewn);
 end
-figure
-xeVector = 0:.02:.5;
-size(xeVector);
-size(lambdaVector);
-plot(xeVector,lambdaVector); hold on;
+%maxNewn
+xe = 0:.02:2;
+plot(xe, steadyState, 'LineWidth', 3); hold on;
+xlabel('Climate Speed');
+ylabel('Population Density');
 
-% figure
-% xVector = 0:N-1;
-% exponentialFit = fit(xVector.', maxNewn, 'exp1');
-% plot(maxNewn)
-% coefficients = coeffvalues(exponentialFit);
-% lambda = exp(coefficients(1,2)); %If less than 1, shrinking. 
 
 function outer = outerFunc(x,y, dispersal_type, param)
     outer = zeros(length(x), length(y));
